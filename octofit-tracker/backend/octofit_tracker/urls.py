@@ -15,10 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+
+import os
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from django.http import JsonResponse
 from . import views
+
 
 router = DefaultRouter()
 router.register(r'users', views.UserViewSet)
@@ -26,9 +30,22 @@ router.register(r'teams', views.TeamViewSet)
 router.register(r'activities', views.ActivityViewSet)
 router.register(r'workouts', views.WorkoutViewSet)
 
+# API root, gibt die dynamische Basis-URL mit $CODESPACE_NAME zurück
+def api_root(request):
+    codespace_name = os.environ.get('CODESPACE_NAME', 'localhost')
+    base_url = f"https://{codespace_name}-8000.app.github.dev/api/"
+    return JsonResponse({
+        "api_base_url": base_url,
+        "users": base_url + "users/",
+        "teams": base_url + "teams/",
+        "activities": base_url + "activities/",
+        "workouts": base_url + "workouts/",
+        "leaderboard": base_url + "leaderboard/",
+    })
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.api_root, name='api-root'),
-    path('leaderboard/', views.LeaderboardView.as_view(), name='leaderboard'),
-    path('', include(router.urls)),
+    path('api/', api_root, name='api-root'),
+    path('api/leaderboard/', views.LeaderboardView.as_view(), name='leaderboard'),
+    path('api/', include(router.urls)),
 ]
